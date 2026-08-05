@@ -38,4 +38,5 @@ public class IncidentAuditLog {
     private User performedBy;
 
     private LocalDateTime performedAt;
+
 }
