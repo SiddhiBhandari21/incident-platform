@@ -14,8 +14,8 @@ public class SecurityConfig
         http.csrf(csrf -> csrf.disable());
         http
                 .authorizeHttpRequests(auth -> {
-                    auth
-                            .requestMatchers("/api/health").permitAll();
+                    auth.requestMatchers("/api/health").permitAll();
+                    auth.requestMatchers("/api/incidents/**").permitAll();
                     auth.anyRequest().authenticated();
                 });
 

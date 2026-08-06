@@ -8,6 +8,6 @@ public class HealthCheckController {
 
     @GetMapping("/api/health")
     public String healthCheck() {
-        return "Security Incident Response Platform is running successfully";
+        return "Security Incident Response is running successfully";
     }
 }
