@@ -3,7 +3,9 @@ package com.siddhi.incident_platform.controller;
 import com.siddhi.incident_platform.dto.IncidentResponse;
 import com.siddhi.incident_platform.dto.CreateIncidentRequest;
 import com.siddhi.incident_platform.service.IncidentService;
+import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -32,5 +34,11 @@ public class IncidentController {
     @GetMapping
     public List<IncidentResponse> getAllIncidents(){
         return incidentService.getAllIncidents();
+    }
+
+    @PatchMapping("/{incidentId}/status")
+    public IncidentResponse updateIncidentStatus(@PathVariable Long incidentId, @RequestBody UpdateIncidentStatusRequest request)
+    {
+        return incidentService.updateIncidentStatus(incidentId,request);
     }
 }

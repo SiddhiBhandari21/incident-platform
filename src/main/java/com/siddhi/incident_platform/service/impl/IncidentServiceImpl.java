@@ -2,12 +2,15 @@ package com.siddhi.incident_platform.service.impl;
 
 import com.siddhi.incident_platform.dto.IncidentResponse;
 import com.siddhi.incident_platform.dto.CreateIncidentRequest;
+import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
 import com.siddhi.incident_platform.repository.IncidentRepository;
 import com.siddhi.incident_platform.repository.UserRepository;
+import com.siddhi.incident_platform.repository.IncidentAuditLogRepository;
 import com.siddhi.incident_platform.service.IncidentService;
-
 import com.siddhi.incident_platform.entity.Incident;
 import com.siddhi.incident_platform.entity.User;
+import com.siddhi.incident_platform.entity.IncidentAuditLog;
+import com.siddhi.incident_platform.enums.AuditAction;
 import com.siddhi.incident_platform.enums.IncidentStatus;
 import com.siddhi.incident_platform.mapper.IncidentMapper;
 
@@ -22,10 +25,12 @@ public class IncidentServiceImpl implements IncidentService {
 
     private final IncidentRepository incidentRepository;
     private final UserRepository userRepository;
+    private final IncidentAuditLogRepository incidentAuditLogRepository;
 
-    public IncidentServiceImpl(IncidentRepository incidentRepository, UserRepository userRepository) {
+    public IncidentServiceImpl(IncidentRepository incidentRepository, UserRepository userRepository, IncidentAuditLogRepository incidentAuditLogRepository) {
         this.incidentRepository = incidentRepository;
         this.userRepository = userRepository;
+        this.incidentAuditLogRepository=incidentAuditLogRepository;
     }
 
     @Override
@@ -68,4 +73,79 @@ public class IncidentServiceImpl implements IncidentService {
                 .map(IncidentMapper::toIncidentResponse)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public IncidentResponse updateIncidentStatus(Long incidentId, UpdateIncidentStatusRequest request)
+    {
+        Incident incident=incidentRepository.findById(incidentId)
+                .orElseThrow(() -> new RuntimeException("Incident not found with Id" + incidentId));
+
+        User updatedBy=userRepository.findById(request.getUpdatedByUserId())
+                .orElseThrow(() -> new RuntimeException("User not found with this id" + request.getUpdatedByUserId()));
+
+        if(request.getIncidentStatus()==null){
+            throw new RuntimeException("Incident status cannot be null");
+        }
+
+        IncidentStatus currentStatus=incident.getIncidentStatus();
+        IncidentStatus newStatus=request.getIncidentStatus();
+
+        if(!isValidStatusTransition(currentStatus,newStatus)) {
+            throw new RuntimeException("Invalid status transition from" + currentStatus + "to" + newStatus);
+        }
+
+
+        incident.setIncidentStatus(newStatus);
+        incident.setUpdatedAt(LocalDateTime.now());
+
+        if(newStatus==IncidentStatus.RESOLVED) {
+            incident.setResolvedAt(LocalDateTime.now());
+        }
+
+        if(newStatus==IncidentStatus.CLOSED) {
+            incident.setClosedAt(LocalDateTime.now());
+        }
+
+        Incident updateIncident=incidentRepository.save(incident);
+
+        IncidentAuditLog incidentAuditLog=IncidentAuditLog.builder()
+                .incident(updateIncident)
+                .action(AuditAction.STATUS_CHANGED)
+                .oldValue(currentStatus.name())
+                .newValue(newStatus.name())
+                .performedBy(updatedBy)
+                .performedAt(LocalDateTime.now())
+                .build();
+
+        incidentAuditLogRepository.save(incidentAuditLog);
+
+        return IncidentMapper.toIncidentResponse(updateIncident);
+    }
+
+    private boolean isValidStatusTransition(IncidentStatus currentStatus, IncidentStatus newStatus)
+    {
+        if(currentStatus==IncidentStatus.OPEN && newStatus==IncidentStatus.IN_PROGRESS)
+        {
+            return true;
+        }
+        if(currentStatus==IncidentStatus.IN_PROGRESS && newStatus==IncidentStatus.ON_HOLD)
+        {
+            return true;
+        }
+        if(currentStatus==IncidentStatus.IN_PROGRESS && newStatus==IncidentStatus.RESOLVED)
+        {
+            return true;
+        }
+        if(currentStatus==IncidentStatus.ON_HOLD && newStatus==IncidentStatus.IN_PROGRESS)
+        {
+            return true;
+        }
+        if(currentStatus==IncidentStatus.RESOLVED && newStatus==IncidentStatus.CLOSED)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
 }
