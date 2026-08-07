@@ -2,6 +2,7 @@ package com.siddhi.incident_platform.controller;
 
 import com.siddhi.incident_platform.dto.IncidentResponse;
 import com.siddhi.incident_platform.dto.CreateIncidentRequest;
+import com.siddhi.incident_platform.dto.AssignIncidentRequest;
 import com.siddhi.incident_platform.service.IncidentService;
 import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
 import org.springframework.web.bind.annotation.*;
@@ -40,5 +41,11 @@ public class IncidentController {
     public IncidentResponse updateIncidentStatus(@PathVariable Long incidentId, @RequestBody UpdateIncidentStatusRequest request)
     {
         return incidentService.updateIncidentStatus(incidentId,request);
+    }
+
+    @PatchMapping("/{incidentId}/assign")
+    public IncidentResponse assignIncident(@PathVariable Long incidentId, @RequestBody AssignIncidentRequest request)
+    {
+        return incidentService.assignIncident(incidentId,request);
     }
 }

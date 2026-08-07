@@ -3,6 +3,7 @@ package com.siddhi.incident_platform.service;
 import com.siddhi.incident_platform.dto.CreateIncidentRequest;
 import com.siddhi.incident_platform.dto.IncidentResponse;
 import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
+import com.siddhi.incident_platform.dto.AssignIncidentRequest;
 
 import java.util.List;
 
@@ -15,5 +16,7 @@ public interface IncidentService {
     List<IncidentResponse> getAllIncidents();
 
     IncidentResponse updateIncidentStatus(Long incidentId, UpdateIncidentStatusRequest request);
+
+    IncidentResponse assignIncident(Long incidentId, AssignIncidentRequest request);
 
 }

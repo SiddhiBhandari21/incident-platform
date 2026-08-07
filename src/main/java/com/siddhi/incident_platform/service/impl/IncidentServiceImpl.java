@@ -3,6 +3,7 @@ package com.siddhi.incident_platform.service.impl;
 import com.siddhi.incident_platform.dto.IncidentResponse;
 import com.siddhi.incident_platform.dto.CreateIncidentRequest;
 import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
+import com.siddhi.incident_platform.dto.AssignIncidentRequest;
 import com.siddhi.incident_platform.repository.IncidentRepository;
 import com.siddhi.incident_platform.repository.UserRepository;
 import com.siddhi.incident_platform.repository.IncidentAuditLogRepository;
@@ -148,4 +149,36 @@ public class IncidentServiceImpl implements IncidentService {
         return false;
     }
 
+    @Override
+    public IncidentResponse assignIncident(Long incidentId, AssignIncidentRequest request)
+    {
+        Incident incident=incidentRepository.findById(incidentId)
+                .orElseThrow(()-> new RuntimeException("Incident not found with id:" + incidentId));
+
+        User assignedTo=userRepository.findById(request.getAssignedToUserId())
+                .orElseThrow(()-> new RuntimeException("Assigned user not found with id:" + request.getAssignedToUserId()));
+
+        User assignedBy=userRepository.findById(request.getAssignedByUserId())
+                .orElseThrow(()-> new RuntimeException("Assigning user not found with id" + request.getAssignedByUserId()));
+
+        User previousAssignee = incident.getAssignedTo();
+
+        incident.setAssignedTo(assignedTo);
+        incident.setUpdatedAt(LocalDateTime.now());
+
+        Incident updatedIncident=incidentRepository.save(incident);
+
+        IncidentAuditLog incidentAuditLog=IncidentAuditLog.builder()
+                .incident(updatedIncident)
+                .action(AuditAction.INCIDENT_ASSIGNED)
+                .oldValue(previousAssignee!=null?previousAssignee.getEmail():"UNASSIGNED")
+                .newValue(assignedTo.getEmail())
+                .performedBy(assignedBy)
+                .performedAt(LocalDateTime.now())
+                .build();
+
+        incidentAuditLogRepository.save(incidentAuditLog);
+
+        return IncidentMapper.toIncidentResponse(updatedIncident);
+    }
 }
