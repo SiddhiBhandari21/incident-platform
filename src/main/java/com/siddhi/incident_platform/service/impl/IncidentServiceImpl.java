@@ -6,6 +6,7 @@ import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
 import com.siddhi.incident_platform.dto.AssignIncidentRequest;
 import com.siddhi.incident_platform.dto.AddIncidentCommentRequest;
 import com.siddhi.incident_platform.dto.IncidentCommentResponse;
+import com.siddhi.incident_platform.dto.AuditLogResponse;
 import com.siddhi.incident_platform.repository.IncidentRepository;
 import com.siddhi.incident_platform.repository.UserRepository;
 import com.siddhi.incident_platform.repository.IncidentAuditLogRepository;
@@ -19,6 +20,7 @@ import com.siddhi.incident_platform.enums.AuditAction;
 import com.siddhi.incident_platform.enums.IncidentStatus;
 import com.siddhi.incident_platform.mapper.IncidentMapper;
 import com.siddhi.incident_platform.mapper.IncidentCommentMapper;
+import com.siddhi.incident_platform.mapper.AuditLogMapper;
 
 
 import org.springframework.stereotype.Service;
@@ -231,6 +233,18 @@ public class IncidentServiceImpl implements IncidentService {
         return incidentCommentRepository.findByIncidentOrderByCommentedAtDesc(incident)
                 .stream()
                 .map(IncidentCommentMapper::toIncidentCommentResponse)
+                .toList();
+    }
+
+    @Override
+    public List<AuditLogResponse> getAuditLogsByIncident(Long incidentId){
+
+        Incident incident=incidentRepository.findById(incidentId)
+                .orElseThrow(()-> new RuntimeException("Incident not found with id:" + incidentId));
+
+        return incidentAuditLogRepository.findByIncidentOrderByPerformedAtDesc(incident)
+                .stream()
+                .map(AuditLogMapper::toAuditLogResponse)
                 .toList();
     }
 }

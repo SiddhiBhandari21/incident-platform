@@ -7,6 +7,7 @@ import com.siddhi.incident_platform.service.IncidentService;
 import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
 import com.siddhi.incident_platform.dto.IncidentCommentResponse;
 import com.siddhi.incident_platform.dto.AddIncidentCommentRequest;
+import com.siddhi.incident_platform.dto.AuditLogResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -61,6 +62,12 @@ public class IncidentController {
     public List<IncidentCommentResponse> getCommentByIncident(@PathVariable Long incidentId)
     {
         return incidentService.getCommentsByIncident(incidentId);
+    }
+
+    @GetMapping("{incidentId}/audit-logs")
+    public List<AuditLogResponse> getAuditLogsByIncident(@PathVariable Long incidentId)
+    {
+        return incidentService.getAuditLogsByIncident(incidentId);
     }
 
 
