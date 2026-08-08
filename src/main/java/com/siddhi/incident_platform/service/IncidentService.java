@@ -4,6 +4,8 @@ import com.siddhi.incident_platform.dto.CreateIncidentRequest;
 import com.siddhi.incident_platform.dto.IncidentResponse;
 import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
 import com.siddhi.incident_platform.dto.AssignIncidentRequest;
+import com.siddhi.incident_platform.dto.AddIncidentCommentRequest;
+import com.siddhi.incident_platform.dto.IncidentCommentResponse;
 
 import java.util.List;
 
@@ -19,4 +21,7 @@ public interface IncidentService {
 
     IncidentResponse assignIncident(Long incidentId, AssignIncidentRequest request);
 
+    IncidentCommentResponse addComment(Long incidentId, AddIncidentCommentRequest request );
+
+    List<IncidentCommentResponse> getCommentsByIncident(Long incidentId);
 }

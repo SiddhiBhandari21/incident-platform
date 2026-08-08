@@ -5,6 +5,8 @@ import com.siddhi.incident_platform.dto.CreateIncidentRequest;
 import com.siddhi.incident_platform.dto.AssignIncidentRequest;
 import com.siddhi.incident_platform.service.IncidentService;
 import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
+import com.siddhi.incident_platform.dto.IncidentCommentResponse;
+import com.siddhi.incident_platform.dto.AddIncidentCommentRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,4 +50,18 @@ public class IncidentController {
     {
         return incidentService.assignIncident(incidentId,request);
     }
+
+    @PostMapping("/{incidentId}/comments")
+    public IncidentCommentResponse addComment(@PathVariable Long incidentId, @RequestBody AddIncidentCommentRequest request)
+    {
+        return incidentService.addComment(incidentId,request);
+    }
+
+    @GetMapping("/{incidentId}/comments")
+    public List<IncidentCommentResponse> getCommentByIncident(@PathVariable Long incidentId)
+    {
+        return incidentService.getCommentsByIncident(incidentId);
+    }
+
+
 }

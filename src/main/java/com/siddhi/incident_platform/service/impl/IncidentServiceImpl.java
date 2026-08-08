@@ -4,16 +4,22 @@ import com.siddhi.incident_platform.dto.IncidentResponse;
 import com.siddhi.incident_platform.dto.CreateIncidentRequest;
 import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
 import com.siddhi.incident_platform.dto.AssignIncidentRequest;
+import com.siddhi.incident_platform.dto.AddIncidentCommentRequest;
+import com.siddhi.incident_platform.dto.IncidentCommentResponse;
 import com.siddhi.incident_platform.repository.IncidentRepository;
 import com.siddhi.incident_platform.repository.UserRepository;
 import com.siddhi.incident_platform.repository.IncidentAuditLogRepository;
+import com.siddhi.incident_platform.repository.IncidentCommentRepository;
 import com.siddhi.incident_platform.service.IncidentService;
 import com.siddhi.incident_platform.entity.Incident;
 import com.siddhi.incident_platform.entity.User;
 import com.siddhi.incident_platform.entity.IncidentAuditLog;
+import com.siddhi.incident_platform.entity.IncidentComment;
 import com.siddhi.incident_platform.enums.AuditAction;
 import com.siddhi.incident_platform.enums.IncidentStatus;
 import com.siddhi.incident_platform.mapper.IncidentMapper;
+import com.siddhi.incident_platform.mapper.IncidentCommentMapper;
+
 
 import org.springframework.stereotype.Service;
 
@@ -27,11 +33,13 @@ public class IncidentServiceImpl implements IncidentService {
     private final IncidentRepository incidentRepository;
     private final UserRepository userRepository;
     private final IncidentAuditLogRepository incidentAuditLogRepository;
+    private final IncidentCommentRepository incidentCommentRepository;
 
-    public IncidentServiceImpl(IncidentRepository incidentRepository, UserRepository userRepository, IncidentAuditLogRepository incidentAuditLogRepository) {
+    public IncidentServiceImpl(IncidentRepository incidentRepository, UserRepository userRepository, IncidentAuditLogRepository incidentAuditLogRepository, IncidentCommentRepository incidentCommentRepository) {
         this.incidentRepository = incidentRepository;
         this.userRepository = userRepository;
         this.incidentAuditLogRepository=incidentAuditLogRepository;
+        this.incidentCommentRepository=incidentCommentRepository;
     }
 
     @Override
@@ -180,5 +188,49 @@ public class IncidentServiceImpl implements IncidentService {
         incidentAuditLogRepository.save(incidentAuditLog);
 
         return IncidentMapper.toIncidentResponse(updatedIncident);
+    }
+
+    @Override
+    public IncidentCommentResponse addComment(Long incidentId, AddIncidentCommentRequest request ) {
+
+        Incident incident=incidentRepository.findById(incidentId)
+                .orElseThrow(()-> new RuntimeException("Incident not found with id:" + incidentId));
+
+        User commentedBy=userRepository.findById(request.getCommentedByUserId())
+                .orElseThrow(()-> new RuntimeException("User not found with id:" + request.getCommentedByUserId()));
+
+        IncidentComment comment= IncidentComment.builder()
+                .incident(incident)
+                .comment(request.getComment())
+                .commentedBy(commentedBy)
+                .commentedAt(LocalDateTime.now())
+                .build();
+
+        IncidentComment savedComment=incidentCommentRepository.save(comment);
+
+        IncidentAuditLog auditLog=IncidentAuditLog.builder()
+                .incident(incident)
+                .action(AuditAction.COMMENT_ADDED)
+                .oldValue(null)
+                .newValue(request.getComment())
+                .performedBy(commentedBy)
+                .performedAt(LocalDateTime.now())
+                .build();
+
+        incidentAuditLogRepository.save(auditLog);
+
+        return IncidentCommentMapper.toIncidentCommentResponse(savedComment);
+    }
+
+    @Override
+    public List<IncidentCommentResponse> getCommentsByIncident(Long incidentId){
+
+        Incident incident=incidentRepository.findById(incidentId)
+                .orElseThrow(()-> new RuntimeException("Incident not found with id:" + incidentId));
+
+        return incidentCommentRepository.findByIncidentOrderByCommentedAtDesc(incident)
+                .stream()
+                .map(IncidentCommentMapper::toIncidentCommentResponse)
+                .toList();
     }
 }
