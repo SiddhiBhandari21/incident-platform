@@ -21,6 +21,8 @@ import com.siddhi.incident_platform.enums.IncidentStatus;
 import com.siddhi.incident_platform.mapper.IncidentMapper;
 import com.siddhi.incident_platform.mapper.IncidentCommentMapper;
 import com.siddhi.incident_platform.mapper.AuditLogMapper;
+import com.siddhi.incident_platform.exception.InvalidStatusTransitionException;
+import com.siddhi.incident_platform.exception.ResourceNotFoundException;
 
 
 import org.springframework.stereotype.Service;
@@ -47,7 +49,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     public IncidentResponse createIncident(CreateIncidentRequest request){
         User createdBy = userRepository.findById(request.getCreatedByUserId())
-                .orElseThrow(()-> new RuntimeException("User not found with id:" + request.getCreatedByUserId()));
+                .orElseThrow(()-> new ResourceNotFoundException("User not found with id:" + request.getCreatedByUserId()));
 
         Incident incident=Incident.builder()
                 .title(request.getTitle())
@@ -71,7 +73,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     public IncidentResponse getIncidentById(Long incidentId){
         Incident incident=incidentRepository.findById(incidentId)
-                .orElseThrow(()-> new RuntimeException("Incident not found with id:" + incidentId));
+                .orElseThrow(()-> new ResourceNotFoundException("Incident not found with id:" + incidentId));
 
         return IncidentMapper.toIncidentResponse(incident);
     }
@@ -89,10 +91,10 @@ public class IncidentServiceImpl implements IncidentService {
     public IncidentResponse updateIncidentStatus(Long incidentId, UpdateIncidentStatusRequest request)
     {
         Incident incident=incidentRepository.findById(incidentId)
-                .orElseThrow(() -> new RuntimeException("Incident not found with Id" + incidentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Incident not found with Id" + incidentId));
 
         User updatedBy=userRepository.findById(request.getUpdatedByUserId())
-                .orElseThrow(() -> new RuntimeException("User not found with this id" + request.getUpdatedByUserId()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this id" + request.getUpdatedByUserId()));
 
         if(request.getIncidentStatus()==null){
             throw new RuntimeException("Incident status cannot be null");
@@ -102,7 +104,7 @@ public class IncidentServiceImpl implements IncidentService {
         IncidentStatus newStatus=request.getIncidentStatus();
 
         if(!isValidStatusTransition(currentStatus,newStatus)) {
-            throw new RuntimeException("Invalid status transition from" + currentStatus + "to" + newStatus);
+            throw new InvalidStatusTransitionException("Invalid status transition from" + currentStatus + "to" + newStatus);
         }
 
 
@@ -163,13 +165,13 @@ public class IncidentServiceImpl implements IncidentService {
     public IncidentResponse assignIncident(Long incidentId, AssignIncidentRequest request)
     {
         Incident incident=incidentRepository.findById(incidentId)
-                .orElseThrow(()-> new RuntimeException("Incident not found with id:" + incidentId));
+                .orElseThrow(()-> new ResourceNotFoundException("Incident not found with id:" + incidentId));
 
         User assignedTo=userRepository.findById(request.getAssignedToUserId())
-                .orElseThrow(()-> new RuntimeException("Assigned user not found with id:" + request.getAssignedToUserId()));
+                .orElseThrow(()-> new ResourceNotFoundException("Assigned user not found with id:" + request.getAssignedToUserId()));
 
         User assignedBy=userRepository.findById(request.getAssignedByUserId())
-                .orElseThrow(()-> new RuntimeException("Assigning user not found with id" + request.getAssignedByUserId()));
+                .orElseThrow(()-> new ResourceNotFoundException("Assigning user not found with id" + request.getAssignedByUserId()));
 
         User previousAssignee = incident.getAssignedTo();
 
@@ -196,10 +198,10 @@ public class IncidentServiceImpl implements IncidentService {
     public IncidentCommentResponse addComment(Long incidentId, AddIncidentCommentRequest request ) {
 
         Incident incident=incidentRepository.findById(incidentId)
-                .orElseThrow(()-> new RuntimeException("Incident not found with id:" + incidentId));
+                .orElseThrow(()-> new ResourceNotFoundException("Incident not found with id:" + incidentId));
 
         User commentedBy=userRepository.findById(request.getCommentedByUserId())
-                .orElseThrow(()-> new RuntimeException("User not found with id:" + request.getCommentedByUserId()));
+                .orElseThrow(()-> new ResourceNotFoundException("User not found with id:" + request.getCommentedByUserId()));
 
         IncidentComment comment= IncidentComment.builder()
                 .incident(incident)
@@ -228,7 +230,7 @@ public class IncidentServiceImpl implements IncidentService {
     public List<IncidentCommentResponse> getCommentsByIncident(Long incidentId){
 
         Incident incident=incidentRepository.findById(incidentId)
-                .orElseThrow(()-> new RuntimeException("Incident not found with id:" + incidentId));
+                .orElseThrow(()-> new ResourceNotFoundException("Incident not found with id:" + incidentId));
 
         return incidentCommentRepository.findByIncidentOrderByCommentedAtDesc(incident)
                 .stream()
@@ -240,7 +242,7 @@ public class IncidentServiceImpl implements IncidentService {
     public List<AuditLogResponse> getAuditLogsByIncident(Long incidentId){
 
         Incident incident=incidentRepository.findById(incidentId)
-                .orElseThrow(()-> new RuntimeException("Incident not found with id:" + incidentId));
+                .orElseThrow(()-> new ResourceNotFoundException("Incident not found with id:" + incidentId));
 
         return incidentAuditLogRepository.findByIncidentOrderByPerformedAtDesc(incident)
                 .stream()
