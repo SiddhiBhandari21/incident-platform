@@ -2,10 +2,12 @@ package com.siddhi.incident_platform.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -32,6 +34,25 @@ public class GlobalExceptionHandler {
                 .build();
 
         return  new ResponseEntity<>(errorResponse,HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiErrorResponse> handleValidationException(MethodArgumentNotValidException exception)
+    {
+        String validationMessage=exception.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error->error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+
+        ApiErrorResponse errorResponse= ApiErrorResponse.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(validationMessage)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return new ResponseEntity<>(errorResponse,HttpStatus.BAD_REQUEST);
+
     }
 
     @ExceptionHandler(RuntimeException.class)

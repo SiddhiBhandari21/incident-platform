@@ -9,6 +9,7 @@ import com.siddhi.incident_platform.dto.IncidentCommentResponse;
 import com.siddhi.incident_platform.dto.AddIncidentCommentRequest;
 import com.siddhi.incident_platform.dto.AuditLogResponse;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -23,7 +24,7 @@ public class IncidentController {
     }
 
     @PostMapping
-    public IncidentResponse createIncident(@RequestBody CreateIncidentRequest request)
+    public IncidentResponse createIncident(@Valid @RequestBody CreateIncidentRequest request)
     {
         return incidentService.createIncident(request);
 
@@ -41,19 +42,19 @@ public class IncidentController {
     }
 
     @PatchMapping("/{incidentId}/status")
-    public IncidentResponse updateIncidentStatus(@PathVariable Long incidentId, @RequestBody UpdateIncidentStatusRequest request)
+    public IncidentResponse updateIncidentStatus(@PathVariable Long incidentId, @Valid @RequestBody UpdateIncidentStatusRequest request)
     {
         return incidentService.updateIncidentStatus(incidentId,request);
     }
 
     @PatchMapping("/{incidentId}/assign")
-    public IncidentResponse assignIncident(@PathVariable Long incidentId, @RequestBody AssignIncidentRequest request)
+    public IncidentResponse assignIncident(@PathVariable Long incidentId,@Valid @RequestBody AssignIncidentRequest request)
     {
         return incidentService.assignIncident(incidentId,request);
     }
 
     @PostMapping("/{incidentId}/comments")
-    public IncidentCommentResponse addComment(@PathVariable Long incidentId, @RequestBody AddIncidentCommentRequest request)
+    public IncidentCommentResponse addComment(@PathVariable Long incidentId,@Valid @RequestBody AddIncidentCommentRequest request)
     {
         return incidentService.addComment(incidentId,request);
     }
