@@ -1,5 +1,7 @@
 package com.siddhi.incident_platform.service.impl;
 
+import com.siddhi.incident_platform.enums.Severity;
+import com.siddhi.incident_platform.enums.IncidentStatus;
 import com.siddhi.incident_platform.dto.IncidentResponse;
 import com.siddhi.incident_platform.dto.CreateIncidentRequest;
 import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
@@ -17,13 +19,15 @@ import com.siddhi.incident_platform.entity.User;
 import com.siddhi.incident_platform.entity.IncidentAuditLog;
 import com.siddhi.incident_platform.entity.IncidentComment;
 import com.siddhi.incident_platform.enums.AuditAction;
-import com.siddhi.incident_platform.enums.IncidentStatus;
 import com.siddhi.incident_platform.mapper.IncidentMapper;
 import com.siddhi.incident_platform.mapper.IncidentCommentMapper;
 import com.siddhi.incident_platform.mapper.AuditLogMapper;
 import com.siddhi.incident_platform.exception.InvalidStatusTransitionException;
 import com.siddhi.incident_platform.exception.ResourceNotFoundException;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 
 import org.springframework.stereotype.Service;
 
@@ -39,19 +43,20 @@ public class IncidentServiceImpl implements IncidentService {
     private final IncidentAuditLogRepository incidentAuditLogRepository;
     private final IncidentCommentRepository incidentCommentRepository;
 
+
     public IncidentServiceImpl(IncidentRepository incidentRepository, UserRepository userRepository, IncidentAuditLogRepository incidentAuditLogRepository, IncidentCommentRepository incidentCommentRepository) {
         this.incidentRepository = incidentRepository;
         this.userRepository = userRepository;
-        this.incidentAuditLogRepository=incidentAuditLogRepository;
-        this.incidentCommentRepository=incidentCommentRepository;
+        this.incidentAuditLogRepository = incidentAuditLogRepository;
+        this.incidentCommentRepository = incidentCommentRepository;
     }
 
     @Override
-    public IncidentResponse createIncident(CreateIncidentRequest request){
+    public IncidentResponse createIncident(CreateIncidentRequest request) {
         User createdBy = userRepository.findById(request.getCreatedByUserId())
-                .orElseThrow(()-> new ResourceNotFoundException("User not found with id:" + request.getCreatedByUserId()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id:" + request.getCreatedByUserId()));
 
-        Incident incident=Incident.builder()
+        Incident incident = Incident.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .severity(request.getSeverity())
@@ -65,26 +70,54 @@ public class IncidentServiceImpl implements IncidentService {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        Incident savedIncident=incidentRepository.save(incident);
+        Incident savedIncident = incidentRepository.save(incident);
 
         return IncidentMapper.toIncidentResponse(savedIncident);
     }
 
     @Override
-    public IncidentResponse getIncidentById(Long incidentId){
-        Incident incident=incidentRepository.findById(incidentId)
-                .orElseThrow(()-> new ResourceNotFoundException("Incident not found with id:" + incidentId));
+    public IncidentResponse getIncidentById(Long incidentId) {
+        Incident incident = incidentRepository.findById(incidentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Incident not found with id:" + incidentId));
 
         return IncidentMapper.toIncidentResponse(incident);
     }
 
     @Override
-    public List<IncidentResponse> getAllIncidents(){
-        List<Incident> incidents=incidentRepository.findAll();
+    public List<IncidentResponse> getAllIncidents() {
+        List<Incident> incidents = incidentRepository.findAll();
 
         return incidents.stream()
                 .map(IncidentMapper::toIncidentResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<IncidentResponse> getIncidentByStatus(IncidentStatus incidentStatus) {
+
+        return incidentRepository.findByIncidentStatus(incidentStatus)
+                .stream()
+                .map(IncidentMapper::toIncidentResponse)
+                .toList();
+    }
+
+    @Override
+    public List<IncidentResponse> getIncidentBySeverity(Severity severity){
+        return incidentRepository.findBySeverity(severity)
+                .stream()
+                .map(IncidentMapper::toIncidentResponse)
+                .toList();
+    }
+
+    @Override
+    public List<IncidentResponse> getIncidentsByAssignedUserId(Long userId){
+        User user=userRepository.findById(userId)
+                .orElseThrow(()-> new ResourceNotFoundException("User not found with id:" +userId));
+
+        return incidentRepository.findByAssignedTo(user)
+                .stream()
+                .map(IncidentMapper::toIncidentResponse)
+                .toList();
     }
 
     @Override
@@ -248,5 +281,14 @@ public class IncidentServiceImpl implements IncidentService {
                 .stream()
                 .map(AuditLogMapper::toAuditLogResponse)
                 .toList();
+    }
+
+    @Override
+    public Page<IncidentResponse> getIncidentsWithPagination(int page, int size){
+
+        Pageable pageable=PageRequest.of(page,size);
+
+        return incidentRepository.findAll(pageable)
+                .map(IncidentMapper::toIncidentResponse);
     }
 }
