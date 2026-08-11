@@ -24,6 +24,9 @@ public interface IncidentRepository extends JpaRepository<Incident, Long>{
 
     boolean existsBySourceTypeAndExternalId(SourceType sourceType, String externalId);
 
+    long countByIncidentStatus(IncidentStatus incidentStatus);
+
+    long countBySeverity(Severity severity);
 
 
 
