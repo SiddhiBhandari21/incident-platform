@@ -2,6 +2,7 @@ package com.siddhi.incident_platform.service.impl;
 
 import com.siddhi.incident_platform.enums.Severity;
 import com.siddhi.incident_platform.enums.IncidentStatus;
+import com.siddhi.incident_platform.enums.NotificationType;
 import com.siddhi.incident_platform.dto.IncidentResponse;
 import com.siddhi.incident_platform.dto.CreateIncidentRequest;
 import com.siddhi.incident_platform.dto.UpdateIncidentStatusRequest;
@@ -13,11 +14,13 @@ import com.siddhi.incident_platform.repository.IncidentRepository;
 import com.siddhi.incident_platform.repository.UserRepository;
 import com.siddhi.incident_platform.repository.IncidentAuditLogRepository;
 import com.siddhi.incident_platform.repository.IncidentCommentRepository;
+import com.siddhi.incident_platform.repository.NotificationRepository;
 import com.siddhi.incident_platform.service.IncidentService;
 import com.siddhi.incident_platform.entity.Incident;
 import com.siddhi.incident_platform.entity.User;
 import com.siddhi.incident_platform.entity.IncidentAuditLog;
 import com.siddhi.incident_platform.entity.IncidentComment;
+import com.siddhi.incident_platform.entity.Notification;
 import com.siddhi.incident_platform.enums.AuditAction;
 import com.siddhi.incident_platform.mapper.IncidentMapper;
 import com.siddhi.incident_platform.mapper.IncidentCommentMapper;
@@ -42,13 +45,15 @@ public class IncidentServiceImpl implements IncidentService {
     private final UserRepository userRepository;
     private final IncidentAuditLogRepository incidentAuditLogRepository;
     private final IncidentCommentRepository incidentCommentRepository;
+    private final NotificationRepository notificationRepository;
 
 
-    public IncidentServiceImpl(IncidentRepository incidentRepository, UserRepository userRepository, IncidentAuditLogRepository incidentAuditLogRepository, IncidentCommentRepository incidentCommentRepository) {
+    public IncidentServiceImpl(IncidentRepository incidentRepository, UserRepository userRepository, IncidentAuditLogRepository incidentAuditLogRepository, IncidentCommentRepository incidentCommentRepository, NotificationRepository notificationRepository) {
         this.incidentRepository = incidentRepository;
         this.userRepository = userRepository;
         this.incidentAuditLogRepository = incidentAuditLogRepository;
         this.incidentCommentRepository = incidentCommentRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     @Override
@@ -223,6 +228,17 @@ public class IncidentServiceImpl implements IncidentService {
                 .build();
 
         incidentAuditLogRepository.save(incidentAuditLog);
+
+        Notification notification=Notification.builder()
+                .notificationType(NotificationType.INCIDENT_ASSIGNED)
+                .message("Incident" + updatedIncident.getTitle() + "has been assigned to you")
+                .incident(updatedIncident)
+                .recipient(assignedTo)
+                .readStatus(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        notificationRepository.save(notification);
 
         return IncidentMapper.toIncidentResponse(updatedIncident);
     }

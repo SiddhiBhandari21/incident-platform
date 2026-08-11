@@ -17,6 +17,8 @@ public class SecurityConfig
                     auth.requestMatchers("/api/health").permitAll();
                     auth.requestMatchers("/api/incidents/**").permitAll();
                     auth.requestMatchers("/api/dashboard/**").permitAll();
+                    auth.requestMatchers("/api/users/**").permitAll();
+                    auth.requestMatchers("/api/notifications/**").permitAll();
                     auth.requestMatchers("/error").permitAll();
                     auth.anyRequest().authenticated();
                 });
